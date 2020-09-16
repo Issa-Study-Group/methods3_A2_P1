@@ -1,0 +1,98 @@
+---
+title: "Assignment 2 - Language Development in ASD - Part 1 - Explaining development, Study Group 7"
+author: "Kristian Severin, Lasse Hansen, Nikolaj Munch & Sarah Nielsen"
+date: "16/09/2020"
+output: html_document
+---
+
+# Assignment 2 - Part 1
+
+### Loading the relevant libraries
+
+```{r Load Libraries, include = FALSE}
+pacman::p_load(tidyverse, lme4, MuMIn, ggpubr, nlme, lmerTest, sjstats, ggplot2, gganimate, gifski)
+```
+
+### Loading data
+
+```{r Load Data, include = FALSE}
+df <- read_csv("data.csv")
+df$X1 <- NULL
+```
+
+## Describe your sample (n, age, gender, clinical and cognitive features of the two groups) and critically assess whether the groups (ASD and TD) are balanced "CODE PART"
+
+```{r descriptive stats, include = FALSE}
+data %>% count(SUBJ)
+# 66 participants
+
+data %>% count(SUBJ) %>% 
+  filter(n == 6)
+# 58 participants completed all 6 visits
+
+# Creating dataframe with those subjects who completed all visits
+alltrials <- data %>% 
+  count(SUBJ) %>% 
+  filter(n == 6) %>% 
+  left_join(data, "SUBJ")
+
+alltrials %>% filter(VISIT == 6) %>% 
+  count(Diagnosis)
+# 27 ASD children and 31 TD children
+
+alltrials %>% filter(VISIT == 6) %>% 
+  count(Gender)
+# 10 females and 48 males
+
+alltrials %>% filter(VISIT == 6) %>% 
+  filter(Diagnosis == "ASD") %>% 
+  count(Gender)
+# Of ASD children 4 were F and 23 were M
+
+alltrials %>% filter(VISIT == 6) %>% 
+  filter(Diagnosis == "TD") %>% 
+  count(Gender)
+# Of TD children 6 were F and 25 were M
+
+alltrials %>% 
+  group_by(Diagnosis) %>% 
+  summarise(mean = mean(Age, na.rm = T))
+# Mean age of TD children 30.77 months and 43.45 of ASD children
+
+alltrials %>% 
+  group_by(Diagnosis) %>% 
+  summarise(mean = mean(MullenRaw, na.rm = T))
+# Mean MSEL of TD children was 36.34 and 33.45 in ASD children
+
+alltrials %>% 
+  group_by(Diagnosis) %>% 
+  summarise(mean = mean(ExpressiveLangRaw, na.rm = T))
+# Mean MSEL of TD children was 29.87 and mean MSEL of ASD children was 23.13
+
+alltrials %>% 
+  group_by(Diagnosis) %>% 
+  summarise(mean = mean(Socialization, na.rm = T))
+# Mean socialization skills in ASD children was 77.36 and 101.70 in TD children
+
+data %>% filter(VISIT == 1) %>% 
+  count(Ethnicity)
+# 2 African American, 1 Asian, 1 Bangladeshi, 1 Latino, 1 Lebanese, 57 White, 1 White/Asian, 2 White/Latino
+```
+
+### Chaging variable types
+
+```{r Changing variable types}
+df$Diagnosis <- as.factor(df$Diagnosis)
+df$SUBJ <- as.factor(df$SUBJ)
+df$Gender <- as.factor(df$Gender)
+df$Ethnicity <- as.factor(df$Ethnicity)
+df$VISIT <- as.numeric(df$VISIT)
+```
+
+### Visualising descriptive stats
+
+```{r}
+ggplot(df, aes(Gender, fill = Ethnicity)) + 
+        geom_bar() +
+        facet_grid(cols = vars(Diagnosis), margins = T) 
+```
