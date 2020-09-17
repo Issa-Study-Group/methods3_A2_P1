@@ -96,3 +96,91 @@ ggplot(df, aes(Gender, fill = Ethnicity)) +
         geom_bar() +
         facet_grid(cols = vars(Diagnosis), margins = T) 
 ```
+
+## Describe linguistic development (in terms of MLU over time) in TD and ASD children (as a function of group).
+
+
+```{r}
+ggplot(df, aes(x=VISIT, y = CHI_MLU, color = Diagnosis)) +
+  geom_point() +
+  geom_smooth(method=lm , color="black", se=TRUE) + 
+  facet_grid(cols = vars(Diagnosis))
+```
+
+
+### Visualising the mothers' the childrens MLU over the 6 visits
+
+```{r Animation of MLU per visit}
+animation <- ggplot(df, aes(VISIT, CHI_MLU, color = Diagnosis)) +
+  geom_point() +
+  scale_x_log10() +
+  theme_bw() +
+  # gganimate specific bits:
+  labs(title = 'VISIT: {frame_time}', x = 'VISIT', y = 'Child MLU') +
+  transition_time(VISIT) +
+  ease_aes('linear')
+
+animate(animation, duration = 10, fps = 20, width = 200, height = 200, renderer = gifski_renderer())
+anim_save("childmlu.gif")
+```
+
+```{r Visualising MLU the different visits, include = FALSE}
+ggline(df,
+       x = "VISIT",
+       y = "CHI_MLU",
+       col = "Diagnosis",
+       add = c("mean_se", "dodge"),
+       palette = "jco")
+```
+
+### Creating the first model for testing our hypothesis
+
+```{r Creating model of MLU}
+M1 <- lmer(CHI_MLU ~ Diagnosis * VISIT + (1 + VISIT | SUBJ), df, REML = F)
+summary(M1)
+performance::r2(M1)
+```
+
+## Describe how parental use of language (in terms of MLU) changes over time. What do you think is going on?
+
+### Visualising the mothers' MLU as a function of visits
+
+```{r}
+ggline(df,
+       x = "VISIT",
+       y = "MOT_MLU",
+       add = c("mean_se", "dodge"),
+       palette = "jco")
+```
+
+### Making a model to describe the mothers' MLU over the different visits
+
+```{r}
+Model_MOT <- lmer(MOT_MLU ~ Diagnosis*VISIT + (1+VISIT|SUBJ), data = df, REML = FALSE)
+summary(Model_MOT)
+performance::r2(Model_MOT)
+```
+
+## Include individual differences in your model of language development (in children). Identify the best model.
+
+### Making the final model and evaluating it
+
+```{r Making final model, include = FALSE}
+growth_m1 <- lmer(CHI_MLU ~  MullenRaw + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+growth_m1 <- lmer(CHI_MLU ~ Diagnosis * VISIT^2 + ExpressiveLangRaw + tokens_CHI + types_CHI + MOT_MLU + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+r2(growth_m1)
+summary(growth_m1)
+```
+
+### Comparing the final model with less complex models
+
+```{r Comparing final model to less complex ones}
+M1 <- lmer(CHI_MLU ~ Diagnosis * VISIT^2 + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+M2 <- lmer(CHI_MLU ~ Diagnosis * VISIT^2 + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+M3 <- lmer(CHI_MLU ~ Diagnosis * VISIT^2 + tokens_CHI + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+M4 <- lmer(CHI_MLU ~ Diagnosis * VISIT^2 + tokens_CHI + types_CHI + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+M5 <- lmer(CHI_MLU ~ Diagnosis * VISIT^2 + tokens_CHI + types_CHI + MOT_MLU + (1 + VISIT | SUBJ), data = df, REML = FALSE)
+
+anova(M1, M2, M3, M4, M5)
+```
+
